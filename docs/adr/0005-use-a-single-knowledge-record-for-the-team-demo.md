@@ -1,0 +1,3 @@
+# Use a single knowledge record for the team demo
+
+The team demo will store each Catalog Test Specification as one structured knowledge record rather than a root with versioned child records. Its permission design contains exactly one User Criteria reference and one Representative Test User for each accessible and inaccessible case; generation trusts these published pairings without evaluating membership or adding publication verification. This minimizes tables, ACLs, resolver logic, and revision-copy logic for the permission-only demonstration, while accepting that incorrect or stale pairings produce unrepresentative tests and that repeated future behaviors may require migration to a normalized model.

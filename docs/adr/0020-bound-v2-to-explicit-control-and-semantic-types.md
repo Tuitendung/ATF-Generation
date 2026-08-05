@@ -1,0 +1,7 @@
+# Bound v2 to explicit control and semantic types
+
+Version 2 separates each Variable Design entry's **Catalog Control Type** from its **Semantic Value Type** and accepts only a closed, schema-versioned type set. This keeps validation, typed Business Logic, test-data generation, and ATF mapping deterministic; allowing arbitrary controls or silently skipping unknown types could produce an apparently successful but behaviorally incomplete test suite.
+
+The supported interactive Catalog Control Types are Single Line Text, Multi Line Text, Integer, Decimal, Checkbox, Yes/No, Select Box, Multiple Choice, Reference, List Collector, Lookup Select, Date, and Date/Time. Lookup Select is supported only under ADR-0053's reference-like, sys_id-valued boundary. Single Row Variable Set and Multi Row Variable Set are supported structures. Label, Annotation, Container, and Split are Structural Variable Entries: they may be represented in Design but do not independently generate variable-input tests.
+
+Attachment, Macro, Macro With Label, UI Page, Custom Widget, Custom Variable Type, and Executable HTML are outside the v2 boundary. An unsupported interactive type makes Design Validation fail before generation rather than being skipped. An MRVS may contain only supported leaf types and may not contain another MRVS. Under ADR-0052, MRVS behavior is limited to whole-collection setting and verification, `ON CHANGE(mrvs_key)`, and `ROW_COUNT(mrvs_key)` conditions; child-cell and cross-row logic remain unsupported.

@@ -1,0 +1,31 @@
+.DS_Store
+.now/
+dist/
+node_modules/
+target/
+@types/
+*.tsbuildinfo
+.jest_cache
+
+# Local environment and secret overrides
+.env
+.env.*
+!.env.example
+*.local.env
+*.secret
+*.secrets
+
+# Credentials, private keys, certificates, and keystores
+credentials.json
+*-credentials.json
+service-account.json
+service-account-*.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.cer
+*.crt
+*.der

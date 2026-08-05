@@ -1,0 +1,7 @@
+# Require explicit nontrivial test data
+
+Version 2 does not implement a general test-data inference or constraint-solving engine. Within the Dependency-Free POC Boundary, Test Designers supply **Candidate Test Values** and optional **Data Profiles** for nontrivial branch values, numeric representatives, Reference bindings, and business-specific values. They do not map Variable Test Data to Behavior IDs or Outcome IDs. ATF Generation may directly reuse an exact typed literal already present in Business Logic and the defined `EMPTY`, `BASELINE`, and `CLEAR` semantics without requiring duplicate data entry. Dependency Test Data remains post-POC under ADR-0055.
+
+The generator validates that supplied values have the declared Semantic Value Type, evaluates a finite set of candidates or indivisible profiles against each contract, then selects satisfying data as preconditions or stimuli, evaluates Design-owned expected effects, and generates ATF. It does not create random live references, invent missing business data, perform unbounded constraint solving, or silently omit an outcome when no suitable data exists; Design Validation reports the missing or ambiguous value instead.
+
+This keeps v2 deterministic and avoids the complexity and trust boundary of a general solver while still relieving the Test Designer from authoring test cases, expected assertions, or ATF steps. Automated data suggestions or broader synthesis may be considered in a later version but are not part of v2.

@@ -1,0 +1,40 @@
+{
+  "evidence_kind": "local_executable_fixture_evidence",
+  "generated_at_utc": "2026-08-05T08:41:41.883Z",
+  "node_version": "v24.18.0",
+  "servicenow_sdk_version": "4.8.1",
+  "matrix_case_count": 18,
+  "repeated_runs_per_case": 10,
+  "matrix_result_hashes_in_execution_order": [
+    "e852fa8f203dccc6fcf46a7497edc2daa4cad8e388d342ba127c0f516b81f18c",
+    "e852fa8f203dccc6fcf46a7497edc2daa4cad8e388d342ba127c0f516b81f18c",
+    "360a283845ce9e79ee10003b2a3325cfdef9ce8f9c49cfde6ec9dd391b871712",
+    "b6c77d69997167904c3554cc2f4dfd991814f0200fee0594410e82dbb7328b5a",
+    "991c76e9808477e408be4293d518a9c8dfe688e18ee86ae4f2b103d177b43b81",
+    "3c257446b25db7dbd5a2c5135ef7dc4ebe12b2cc9ea1ccf61053bfb02b60169d",
+    "3a0180bb9781a43e3b04c8e6b91f197fa830d8042595dae9e650e41a51c8ec60",
+    "d41fd72d3c516ce78873b29e0fd7f4ebe250ab9a1553469130dbcbb3350f728b",
+    "defdfc5485decbebb0b4ee6b533bdfd712e86a9100d1d568759ac6a4b629d82c",
+    "5b6bf9eb3e9349bfdf725ade4e0f8125a52274fd8f62be3e62982c03f1a4db15",
+    "ba8c10d3571a06541234181375874be52934f98de3269b7bba35c372984b4d35",
+    "21a5efc8efe1c57e74fa10218340167dd063bae7aa124cc0c706ce81cc4afe0c",
+    "b296caaaab9c1d7b96694b369236b70d5be211df9e3f1c38d87c4f9fbda89a79",
+    "dbb8ae906ed59520e166fc29cfd3fed30f5552a5bbbe1a2822d988cac906589b",
+    "a491fccb3128464ae754f31dce0a81f87bb68a24ea48d4d62e3e47080fd944c4",
+    "64f181a6eae2ce6d3eaf5a260fc3aea1cc488afd745ed8e73d21e09bb57d6e7d",
+    "38760ba5c146cc89baa18ce05d9d4d67aa8e8d0cca2d111be5d2e51009cf59ec",
+    "0c189f8f0528633766384a9e392e96daf81f4f017baf1c5e2d82df9dcf47ee1c"
+  ],
+  "line_endings": {
+    "lf_result_sha256": "e852fa8f203dccc6fcf46a7497edc2daa4cad8e388d342ba127c0f516b81f18c",
+    "crlf_result_sha256": "e852fa8f203dccc6fcf46a7497edc2daa4cad8e388d342ba127c0f516b81f18c",
+    "equivalent": true,
+    "retained_data_physical_lines": [3]
+  },
+  "structurally_invalid_business_logic": {
+    "terminal_result": "DESIGN_INVALID",
+    "now_assist_calls": 0,
+    "observed_callback_calls": 0,
+    "ordered_diagnostic_sha256": "7eb01c07541c557c5d92fd53d61bbd556ee99b62dd8c5e072c62c0c07e1f4fd2"
+  }
+}

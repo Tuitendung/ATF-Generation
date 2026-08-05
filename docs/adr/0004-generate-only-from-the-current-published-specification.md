@@ -1,0 +1,11 @@
+# Generate only from the current published specification
+
+ATF Generation will consume only the single Current Specification associated with a Catalog Item Under Test; draft, review, superseded, and retired revisions are ineligible. Reusing the knowledge publication lifecycle prevents incomplete edits from changing generated tests, while accepting that a newer draft has no effect until it is published.
+
+Generation requires the lookup to return exactly one eligible record. If no matching Current Published Specification exists, or if multiple matching Published records make the source ambiguous, the generator fails before creating any Test Suite, Test, step, or suite membership and reports the cardinality problem to the Test Designer. It will not select the most recent record, take the first query result, hide the UI Action, or fall back to a Draft.
+
+After exact-cardinality lookup, the v1 UI Action requires the Current Specification to declare `Schema Version = 1`. Any blank or unsupported value prevents enqueue and reports the compatibility problem; this check does not validate field completeness, User Criteria membership, or Design correctness.
+
+The team-demo Knowledge Base uses an immediate, user-initiated publication path: a Test Designer explicitly selects **Publish**, and the Specification becomes Published without an approval stage. Saving a Draft does not publish it automatically. This preserves Published as an intentional generation boundary while relying on the agreed POC assumption that Design verification has already happened outside the generator.
+
+Published Specifications are treated as immutable by the POC process. A Design change is prepared as a separate Draft Knowledge Article, then the Test Designer retires the old Published record before publishing the replacement. This avoids both in-place mutation of the generation oracle and a dependency on Knowledge Management Advanced article versioning, at the accepted costs of a new Knowledge Article number and a brief retire-then-publish interval in which no Current Specification exists. If the replacement is published before the old record is retired, exact-cardinality lookup stops generation as ambiguous; there is no atomic switch or automatic reconciliation.
