@@ -1,6 +1,6 @@
 # Ticket 01 — Runtime AI Feasibility Gate Evidence
 
-Gate result as of 2026-08-05: **BLOCKED**
+Gate result as of 2026-08-06: **BLOCKED**
 
 The deterministic throwaway prototype is implemented and locally executable. The gate cannot be marked PASS or FAIL because this workspace has no configured ServiceNow target, credentials, target release identity, or Now Assist entitlement evidence. Local doubles cannot prove Now Assist behavior, scoped background invocation, platform logging, or target-instance artifact absence.
 
@@ -25,7 +25,7 @@ Command:
 npm.cmd run test:ticket-01-v2-feasibility
 ```
 
-Observed result on 2026-08-05:
+Observed result on 2026-08-06 after the Typed Value Expression remediation:
 
 ```text
 Ticket 01 local feasibility harness: PASS (11 fixtures x 10 runs; deterministic controls only)
@@ -47,8 +47,16 @@ The 11 reviewed fixtures cover:
 
 The executable tests prove the deterministic harness behavior, not model accuracy:
 
+- a complete versioned Draft 2020-12 normalized output schema (`ticket-01-v2`) with closed accepted/rejected responses, Catalog Behavioral Contract, typed trigger/condition/effect variants, source-line mappings, stable rejection codes, and `additionalProperties: false` on every object;
+- a closed discriminated Typed Value Expression with seven typed literal variants, nine declared-variable semantic types, exact base-10 arithmetic, explicit `ROUND` with half-away-from-zero semantics, recursive ordered text `CONCAT`, and distinct `BASELINE`, `KEEP`, and `EMPTY` directive nodes;
+- canonical exact-number strings bounded to 15 total and 6 fractional digits, with division excluded outside an enclosing `ROUND`; JavaScript binary floating point is never used as the expected-value oracle;
+- a literal text value equal to `"EMPTY"` remains canonically distinct from the `EMPTY` directive node;
 - recursive object-property sorting while preserving semantic array order;
-- strict accepted/rejected response-envelope and normalized-contract schema validation;
+- strict discriminated accepted/rejected response-envelope and normalized-contract schema validation;
+- schema-invalid discriminators, unexpected properties, legacy primitive `VALUE` payloads, invalid exact-number/date shapes, invalid operands, unrounded division, unsupported rounding, and invalid directives receive one identical technical retry rather than becoming semantic disagreement;
+- exhaustive prototype parity checks pin accepted/rejected envelopes, rejection codes, trigger/condition/effect discriminators, operator enums, state/message values, and the complete Typed Value Expression surface across the capability catalog, serialized JSON Schema, and strict response validator;
+- every retry and Skill invocation receives a fresh copy of one immutable canonical original input;
+- actual before/after invocation hashes terminally block mutation before a retry or Verifier call;
 - ten harness runs for every reviewed fixture;
 - identical original input hashes for Extractor and Verifier;
 - exact equality to reviewed canonical contracts in the accepted-double seam;
@@ -62,6 +70,7 @@ The executable tests prove the deterministic harness behavior, not model accurac
 - evidence containing hashes, versions, attempt counts, agreement state, source locations, and artifact counts only;
 - no raw prompt, response, duplicated Design, quoted literal, or complete conversation in evidence;
 - a zero-artifact boundary through an injected before/after artifact-count seam;
+- a closed aggregate corpus verdict that cannot return `PASS` for a missing/duplicate/unexpected run, fixture-result mismatch, input-hash breach, expected-contract hash mismatch, incomplete attempt evidence, or artifact delta;
 - exactly two Skill definitions and zero Agent definitions in the prototype source.
 
 Build command:
@@ -70,13 +79,21 @@ Build command:
 npm.cmd run build
 ```
 
-Observed result on 2026-08-05 after the ServiceNow SDK was allowed to read its user-profile dependency paths:
+Observed result on 2026-08-06 after the ServiceNow SDK was allowed to read its user-profile dependency paths:
 
 ```text
 [now-sdk] Build completed successfully
 ```
 
-A final repository-wide build was attempted again after documentation and test completion. It is currently red because an out-of-scope file that appeared after the initial inventory, `src/fluent/tests/v2-ticket-03-form-load.now.ts`, has 12 SDK `TS211` diagnostics in interpolated `variableValues` expressions. Ticket 01 did not create or edit that file, and it was not changed because this ticket is forbidden from implementing Ticket 02 or later. The Ticket 01 node syntax checks and focused harness test remain green after that external change.
+A final repository-wide build was run again after the Ticket 01 remediation and completed successfully. Ticket 01 did not edit any Ticket 02-or-later source.
+
+The serialized Output Schema was also compiled in strict Draft 2020-12 mode with the installed AJV 8 and `ajv-formats` packages, then evaluated against every reviewed accepted/rejected fixture response. Observed result on 2026-08-06:
+
+```text
+Ticket 01 output schema: COMPILED; all reviewed responses valid
+```
+
+This check exposed and removed a non-standard root `version` keyword and replaced the otherwise legal union-type shorthand with explicit `oneOf` branches for strict-compiler portability. Version identity remains machine-readable through the versioned `$id`, `contract.schemaVersion`, and evidence `outputSchemaVersion`.
 
 The Skill metadata shape, input types, security-control shape, prompt configuration, model token, and build constraints were verified against the installed official ServiceNow SDK 4.8.1 documentation:
 
@@ -90,24 +107,24 @@ Source SHA-256 values after the local run:
 | Evidence source | SHA-256 |
 | --- | --- |
 | Throwaway Skills | `CAF8D7D6B8E03BAEBB96493C469302D14595B0DD0D35EEE7F440F5CD851DC829` |
-| Background harness | `54E15BFA17A70B67091765B84CA48FF87F69548DEAAFF969F674A88E8D9DD535` |
-| Reviewed corpus | `092ECF06818DEC47307395E84BDBC7385490FE15E074A33153DC585A1EA7DD03` |
-| Executable tests | `5AB732A64D8D2280DCA16BD3FB2B7DF6FB8E35C8A76289397432D69DA03A37CA` |
+| Background harness | `61FC612BCA359B2A34EBE0D2BCE5C7E87B78EB921E38F7FBFBBB0FD0165F9AB2` |
+| Reviewed corpus and output schema | `EF6B7CC35AF2AC5759A60EB559C5AAA260C3C59D8D581986381723BF188BFC9D` |
+| Executable tests | `B4B83C156FA3B918C0D72C5066571E4AF577CC80078AFFF935CC2EFFC2BF6AAA` |
 
 ## Acceptance classification
 
 | Ticket requirement | Local status | Target-instance status |
 | --- | --- | --- |
 | Two distinct throwaway Skills; no Agent | Source and SDK build proven | Deployment, distinct record IDs, and zero Agent inspection required |
-| Same four original inputs | Definition and hash seam proven | Captured invocation records/evidence required |
-| Verifier receives no Extractor output/conversation | Input surface and orchestrator seam proven | Runtime invocation observation required |
-| Structured output and deterministic canonicalization | Locally proven | Real Skill response enforcement required |
+| Same four original inputs | Definition, immutable original envelope, fresh-copy, and actual per-call hash seams proven | Captured invocation records/evidence required |
+| Verifier receives no Extractor output/conversation | Input surface proven; mutation terminally blocks before Verifier | Runtime invocation observation required |
+| Structured output and deterministic canonicalization | Complete machine-checkable `ticket-01-v2` schema, closed Typed Value Expression, strict discriminated validator, and schema/validator parity checks locally proven | Real Skill response enforcement required |
 | Full supported/invalid corpus | Reviewed corpus present | Real model execution required |
-| Ten runs per fixture | Harness loop proven with doubles | All 110 real repeated fixture runs required |
+| Ten runs per fixture | Closed aggregate verdict and exact run matrix proven with doubles | All 110 real repeated fixture runs required |
 | Exact quoted literal preservation | Reviewed seam proven | Real Skill responses required |
 | One identical retry for all technical failures | Locally proven by failure injection | Target invocation failure injection required |
 | Semantic difference has no retry/vote/selection | Locally proven | Target background invocation evidence required |
-| Terminal inconsistent/technical results and zero artifacts | Locally proven at harness boundary | ATF table inspection required |
+| Terminal inconsistent/technical/input-integrity/artifact-boundary results and zero artifacts | Locally proven at harness boundary | ATF table inspection required |
 | Non-raw evidence only | Evidence serializer locally proven | System/Now Assist log inspection required |
 | No persisted raw Design or AI conversations | No local persistence exists | Target log/config inspection required |
 | No ATF record or custom table | No such metadata/source was added | Before/after target table/schema inspection required |
@@ -121,8 +138,8 @@ These steps deliberately stop where the installed SDK documentation stops. Do no
 2. Confirm the provider/model values in the throwaway definitions against those observed records. Supply a `providerAPI` only if its `sys_hub_flow` identifier is observed on this target.
 3. Deploy the application, publish only these two throwaway prompts through the target-supported Skill Builder lifecycle, and capture the two Skill record IDs, prompt/version IDs, export/configuration, and screenshots. Confirm there is no Now Assist Agent created for Ticket 01.
 4. From official documentation installed on the target or from the target's supported APIs, identify and record the scoped server-side Skill invocation API and its response/error contract. Adapt it to the harness dependency `invokeSkill(skillName, inputEnvelope)`. The adapter must pass the four supplied fields unchanged and return only the Skill response. It must not retain conversation state or pass the Extractor result to the Verifier.
-5. In a scoped background execution context, load `ticket-01-runtime-ai-feasibility-harness.js` and `ticket-01-runtime-ai-fixtures.js`, provide the verified adapter, a `GlideDigest().getSHA256Hex` wrapper, and a read-only ATF artifact-count function. Run `runCorpus(Ticket01RuntimeAiFixtures.fixtures, Ticket01RuntimeAiFixtures.contracts, dependencies)`.
-6. Capture the sanitized evidence array outside the repository first. Confirm it contains exactly 110 fixture-run records and that every supported record is `AI_INTERPRETATION_AGREED`, every invalid record is `DESIGN_INVALID`, all accepted hashes equal the reviewed expected hash, both Skill input hashes match, and every record reports zero artifact delta.
+5. In a scoped background execution context, load `ticket-01-runtime-ai-feasibility-harness.js` and `ticket-01-runtime-ai-fixtures.js`, provide the verified adapter, a `GlideDigest().getSHA256Hex` wrapper, and a read-only ATF artifact-count function. Run `runCorpus(Ticket01RuntimeAiFixtures.fixtures, Ticket01RuntimeAiFixtures.contracts, dependencies)` and retain its sanitized closed verdict object.
+6. Require the returned verdict to be `PASS`, require an empty `failures` array, and confirm `evidence` contains exactly 110 fixture-run records. Every supported record must be `AI_INTERPRETATION_AGREED`, every invalid record must be the exact reviewed `DESIGN_INVALID` rejection, all canonical hashes must equal the reviewed expected hash, every actual before/after invocation input hash must equal the immutable original hash, and every record must report zero artifact delta.
 7. Execute each technical injection twice for each Skill phase as supported by the verified adapter: timeout, transport, unavailable service, rate limit, malformed response, truncated response, and response-schema failure. Capture two identical input hashes and exactly two attempts followed by `AI_INTERPRETATION_TECHNICAL_FAILURE`.
 8. Inject one schema-valid semantic difference at the adapter/harness seam. Capture exactly two total Skill calls, one comparison, structured hash-only differences, `AI_INTERPRETATION_INCONSISTENT`, and no later call or artifact write.
 9. Inspect the target's system and Now Assist usage logs using target-verified table names. Search by the recorded time window, Skill IDs, prompt IDs, and run correlation. Demonstrate that the retained Ticket 01 evidence has no raw prompt, raw response, duplicated Variable Design, duplicated Business Logic, quoted fixture text, or complete conversation. Do not export raw content into this repository while performing the inspection.
@@ -134,7 +151,6 @@ These steps deliberately stop where the installed SDK documentation stops. Do no
 - `.now/` contains only `bom.json`; `SN_INSTANCE_URL`, `SN_USERNAME`, and `SN_PASSWORD` are not set.
 - No target ServiceNow release or Now Assist entitlement/configuration is available in the workspace.
 - No target-supported scoped server-side Skill invocation API has been verified. The installed SDK documents Skill definition metadata but not the background invocation contract needed here.
-- The workspace has no `.git` directory, so a Ticket 01 diff review against a fixed point and the required commit cannot yet be performed.
-- The final repository-wide SDK build is blocked by 12 diagnostics in the out-of-scope concurrently added `src/fluent/tests/v2-ticket-03-form-load.now.ts`; the earlier build containing the Ticket 01 Skill definitions completed successfully.
+- Git is configured on branch `ticket/01-runtime-ai-feasibility` with fixed point tag `baseline-before-ticket-01-remediation`; only the dedicated remediation commit remains in the local close-out.
 
 No instance PASS evidence has been simulated or inferred from local doubles.

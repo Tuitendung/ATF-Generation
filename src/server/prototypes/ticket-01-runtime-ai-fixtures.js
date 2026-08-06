@@ -12,9 +12,16 @@ var VARIABLE_DESIGN = [
 ].join('\n')
 
 var CAPABILITY_CATALOG = JSON.stringify({
-    version: 'ticket-01-v1',
+    version: 'ticket-01-v2',
     triggers: ['FORM_LOAD', 'VARIABLE_CHANGE'],
     effects: ['VALUE', 'VISIBLE', 'MANDATORY', 'READ_ONLY', 'MESSAGE'],
+    valueExpressionKinds: ['literal', 'variable', 'arithmetic', 'round', 'concat', 'directive'],
+    literalSemanticTypes: ['text', 'integer', 'decimal', 'boolean', 'choice', 'date', 'date_time'],
+    variableSemanticTypes: ['text', 'integer', 'decimal', 'boolean', 'choice', 'reference', 'reference_set', 'date', 'date_time'],
+    arithmeticOperators: ['ADD', 'SUBTRACT', 'MULTIPLY', 'DIVIDE'],
+    valueFunctions: ['ROUND', 'CONCAT'],
+    valueDirectives: ['BASELINE', 'KEEP', 'EMPTY'],
+    exactNumberLimits: { totalDigits: 15, fractionalDigits: 6, roundingMode: 'HALF_AWAY_FROM_ZERO' },
     messageScopes: ['FIELD', 'FORM'],
     messageTypes: ['INFO', 'WARNING', 'ERROR'],
     booleanOperators: ['AND', 'OR'],
@@ -23,23 +30,607 @@ var CAPABILITY_CATALOG = JSON.stringify({
         'Mixed AND and OR requires explicit source parentheses.',
         'Preserve every exact quoted literal byte-for-byte.',
         'Reject ambiguous or unsupported meaning; never repair Design.',
+        'Represent exact numbers as canonical base-10 strings; never use binary floating point.',
+        'DIVIDE is valid only inside ROUND with an explicit scale from 0 through 6.',
+        'CONCAT accepts ordered text expressions only.',
     ],
 })
 
+var REJECTION_CODES = [
+    'BEHAVIOR_ANCHOR_INVALID',
+    'TARGET_UNKNOWN',
+    'TARGET_UNSUPPORTED',
+    'TRIGGER_INVALID',
+    'TRIGGER_MULTIPLE',
+    'TRIGGER_UNKNOWN',
+    'TRIGGER_UNSUPPORTED',
+    'OUTCOME_ID_INVALID',
+    'OUTCOME_ID_DUPLICATE',
+    'BRANCH_ORDER_INVALID',
+    'TERMINAL_OTHERWISE_MISSING',
+    'BRANCH_NESTING_FORBIDDEN',
+    'INSTRUCTION_LANGUAGE_UNSUPPORTED',
+    'TECHNICAL_IDENTIFIER_REQUIRED',
+    'CONDITION_INVALID',
+    'CONDITION_REFERENCE_UNKNOWN',
+    'CONDITION_TYPE_MISMATCH',
+    'BOOLEAN_PARENTHESES_REQUIRED',
+    'EFFECT_INVALID',
+    'EFFECT_PROPERTY_UNSUPPORTED',
+    'EFFECT_TARGET_UNSUPPORTED',
+    'EFFECT_VALUE_INVALID',
+    'EFFECT_VALUE_TYPE_MISMATCH',
+    'EFFECT_DUPLICATE',
+    'EFFECT_SET_ASYMMETRIC',
+    'MESSAGE_TYPE_INVALID',
+    'BEHAVIOR_MESSAGE_TYPE_MULTIPLE',
+    'QUOTED_LITERAL_CHANGED',
+    'FEATURE_DEPENDENCY_UNSUPPORTED',
+    'FEATURE_SCENARIO_UNSUPPORTED',
+    'FEATURE_MRVS_BEHAVIOR_UNSUPPORTED',
+    'FEATURE_PRESENTATION_UNSUPPORTED',
+]
+
 var OUTPUT_SCHEMA = JSON.stringify({
-    version: 'ticket-01-v1',
-    response: {
-        oneOf: [
-            { status: 'accepted', contract: 'CatalogBehavioralContract' },
-            { status: 'rejected', rejection: { code: 'string', sourceLines: ['positive integer'] } },
-        ],
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    $id: 'urn:atf-generation:ticket-01:catalog-behavioral-contract:v2',
+    $comment: 'Normalized response contract version ticket-01-v2',
+    title: 'Ticket 01 normalized Skill response',
+    type: 'object',
+    properties: {
+        status: { enum: ['accepted', 'rejected'] },
+        contract: { $ref: '#/$defs/catalogBehavioralContract' },
+        rejection: { $ref: '#/$defs/rejection' },
     },
-    semanticArraysAreOrdered: true,
+    oneOf: [
+        { $ref: '#/$defs/acceptedResponse' },
+        { $ref: '#/$defs/rejectedResponse' },
+    ],
     additionalProperties: false,
+    $defs: {
+        designKey: { type: 'string', pattern: '^[a-z][a-z0-9_]{0,63}$' },
+        positiveLine: { type: 'integer', minimum: 1 },
+        scalarValue: {
+            oneOf: [
+                { type: 'string' },
+                { type: 'number' },
+                { type: 'boolean' },
+            ],
+        },
+        exactInteger: {
+            type: 'string',
+            pattern: '^(?:0|-?[1-9][0-9]{0,14})$',
+        },
+        exactDecimal: {
+            type: 'string',
+            anyOf: [
+                { pattern: '^(?:0|-?[1-9][0-9]{0,14})$' },
+                { pattern: '^-?(?:0|[1-9][0-9]{0,13})\\.[1-9]$' },
+                { pattern: '^-?(?:0|[1-9][0-9]{0,12})\\.[0-9][1-9]$' },
+                { pattern: '^-?(?:0|[1-9][0-9]{0,11})\\.[0-9]{2}[1-9]$' },
+                { pattern: '^-?(?:0|[1-9][0-9]{0,10})\\.[0-9]{3}[1-9]$' },
+                { pattern: '^-?(?:0|[1-9][0-9]{0,9})\\.[0-9]{4}[1-9]$' },
+                { pattern: '^-?(?:0|[1-9][0-9]{0,8})\\.[0-9]{5}[1-9]$' },
+            ],
+        },
+        typedValueExpression: {
+            oneOf: [
+                { $ref: '#/$defs/typedLiteralExpression' },
+                { $ref: '#/$defs/variableValueExpression' },
+                { $ref: '#/$defs/arithmeticExpression' },
+                { $ref: '#/$defs/roundExpression' },
+                { $ref: '#/$defs/concatExpression' },
+                { $ref: '#/$defs/valueDirectiveExpression' },
+            ],
+        },
+        typedLiteralExpression: {
+            oneOf: [
+                { $ref: '#/$defs/textLiteralExpression' },
+                { $ref: '#/$defs/integerLiteralExpression' },
+                { $ref: '#/$defs/decimalLiteralExpression' },
+                { $ref: '#/$defs/booleanLiteralExpression' },
+                { $ref: '#/$defs/choiceLiteralExpression' },
+                { $ref: '#/$defs/dateLiteralExpression' },
+                { $ref: '#/$defs/dateTimeLiteralExpression' },
+            ],
+        },
+        textLiteralExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'value'],
+            properties: {
+                kind: { const: 'literal' },
+                semanticType: { const: 'text' },
+                value: { type: 'string', minLength: 1 },
+            },
+            additionalProperties: false,
+        },
+        integerLiteralExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'value'],
+            properties: {
+                kind: { const: 'literal' },
+                semanticType: { const: 'integer' },
+                value: { $ref: '#/$defs/exactInteger' },
+            },
+            additionalProperties: false,
+        },
+        decimalLiteralExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'value'],
+            properties: {
+                kind: { const: 'literal' },
+                semanticType: { const: 'decimal' },
+                value: { $ref: '#/$defs/exactDecimal' },
+            },
+            additionalProperties: false,
+        },
+        booleanLiteralExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'value'],
+            properties: {
+                kind: { const: 'literal' },
+                semanticType: { const: 'boolean' },
+                value: { type: 'boolean' },
+            },
+            additionalProperties: false,
+        },
+        choiceLiteralExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'value'],
+            properties: {
+                kind: { const: 'literal' },
+                semanticType: { const: 'choice' },
+                value: { type: 'string', minLength: 1 },
+            },
+            additionalProperties: false,
+        },
+        dateLiteralExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'value'],
+            properties: {
+                kind: { const: 'literal' },
+                semanticType: { const: 'date' },
+                value: { type: 'string', format: 'date', pattern: '^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$' },
+            },
+            additionalProperties: false,
+        },
+        dateTimeLiteralExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'value'],
+            properties: {
+                kind: { const: 'literal' },
+                semanticType: { const: 'date_time' },
+                value: { type: 'string', format: 'date-time', pattern: '^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\dZ$' },
+            },
+            additionalProperties: false,
+        },
+        valueDirectiveExpression: {
+            type: 'object',
+            required: ['kind', 'directive'],
+            properties: {
+                kind: { const: 'directive' },
+                directive: { enum: ['BASELINE', 'KEEP', 'EMPTY'] },
+            },
+            additionalProperties: false,
+        },
+        variableValueExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'variableKey'],
+            properties: {
+                kind: { const: 'variable' },
+                semanticType: { enum: ['text', 'integer', 'decimal', 'boolean', 'choice', 'reference', 'reference_set', 'date', 'date_time'] },
+                variableKey: { $ref: '#/$defs/designKey' },
+            },
+            additionalProperties: false,
+        },
+        numericLiteralExpression: {
+            oneOf: [
+                { $ref: '#/$defs/integerLiteralExpression' },
+                { $ref: '#/$defs/decimalLiteralExpression' },
+            ],
+        },
+        numericVariableExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'variableKey'],
+            properties: {
+                kind: { const: 'variable' },
+                semanticType: { enum: ['integer', 'decimal'] },
+                variableKey: { $ref: '#/$defs/designKey' },
+            },
+            additionalProperties: false,
+        },
+        numericAtomExpression: {
+            oneOf: [
+                { $ref: '#/$defs/numericLiteralExpression' },
+                { $ref: '#/$defs/numericVariableExpression' },
+            ],
+        },
+        numericValueExpression: {
+            oneOf: [
+                { $ref: '#/$defs/numericAtomExpression' },
+                { $ref: '#/$defs/arithmeticExpression' },
+                { $ref: '#/$defs/roundExpression' },
+            ],
+        },
+        roundableNumericExpression: {
+            oneOf: [
+                { $ref: '#/$defs/numericAtomExpression' },
+                { $ref: '#/$defs/roundableArithmeticExpression' },
+                { $ref: '#/$defs/roundExpression' },
+            ],
+        },
+        arithmeticExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'operator', 'left', 'right'],
+            properties: {
+                kind: { const: 'arithmetic' },
+                semanticType: { enum: ['integer', 'decimal'] },
+                operator: { enum: ['ADD', 'SUBTRACT', 'MULTIPLY'] },
+                left: { $ref: '#/$defs/numericValueExpression' },
+                right: { $ref: '#/$defs/numericValueExpression' },
+            },
+            additionalProperties: false,
+        },
+        roundableArithmeticExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'operator', 'left', 'right'],
+            properties: {
+                kind: { const: 'arithmetic' },
+                semanticType: { enum: ['integer', 'decimal'] },
+                operator: { enum: ['ADD', 'SUBTRACT', 'MULTIPLY', 'DIVIDE'] },
+                left: { $ref: '#/$defs/roundableNumericExpression' },
+                right: { $ref: '#/$defs/roundableNumericExpression' },
+            },
+            additionalProperties: false,
+        },
+        roundExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'operand', 'scale', 'mode'],
+            properties: {
+                kind: { const: 'round' },
+                semanticType: { enum: ['integer', 'decimal'] },
+                operand: { $ref: '#/$defs/roundableNumericExpression' },
+                scale: { type: 'integer', minimum: 0, maximum: 6 },
+                mode: { const: 'HALF_AWAY_FROM_ZERO' },
+            },
+            additionalProperties: false,
+        },
+        textVariableExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'variableKey'],
+            properties: {
+                kind: { const: 'variable' },
+                semanticType: { const: 'text' },
+                variableKey: { $ref: '#/$defs/designKey' },
+            },
+            additionalProperties: false,
+        },
+        textValueExpression: {
+            oneOf: [
+                { $ref: '#/$defs/textLiteralExpression' },
+                { $ref: '#/$defs/textVariableExpression' },
+                { $ref: '#/$defs/concatExpression' },
+            ],
+        },
+        concatExpression: {
+            type: 'object',
+            required: ['kind', 'semanticType', 'operands'],
+            properties: {
+                kind: { const: 'concat' },
+                semanticType: { const: 'text' },
+                operands: {
+                    type: 'array',
+                    minItems: 2,
+                    items: { $ref: '#/$defs/textValueExpression' },
+                },
+            },
+            additionalProperties: false,
+        },
+        acceptedResponse: {
+            type: 'object',
+            required: ['status', 'contract'],
+            properties: {
+                status: { const: 'accepted' },
+                contract: { $ref: '#/$defs/catalogBehavioralContract' },
+            },
+            additionalProperties: false,
+        },
+        rejectedResponse: {
+            type: 'object',
+            required: ['status', 'rejection'],
+            properties: {
+                status: { const: 'rejected' },
+                rejection: { $ref: '#/$defs/rejection' },
+            },
+            additionalProperties: false,
+        },
+        rejection: {
+            type: 'object',
+            required: ['code', 'sourceLines'],
+            properties: {
+                code: { $ref: '#/$defs/rejectionCode' },
+                sourceLines: {
+                    type: 'array',
+                    minItems: 1,
+                    uniqueItems: true,
+                    items: { $ref: '#/$defs/positiveLine' },
+                },
+            },
+            additionalProperties: false,
+        },
+        rejectionCode: { type: 'string', enum: REJECTION_CODES },
+        catalogBehavioralContract: {
+            type: 'object',
+            required: ['schemaVersion', 'behaviorId', 'target', 'trigger', 'outcomes'],
+            properties: {
+                schemaVersion: { const: 'ticket-01-v2' },
+                behaviorId: { $ref: '#/$defs/designKey' },
+                target: {
+                    oneOf: [
+                        { $ref: '#/$defs/designKey' },
+                        { const: 'CATALOG_FORM' },
+                    ],
+                },
+                trigger: { $ref: '#/$defs/trigger' },
+                outcomes: {
+                    type: 'array',
+                    minItems: 1,
+                    items: { $ref: '#/$defs/outcome' },
+                },
+            },
+            additionalProperties: false,
+        },
+        trigger: {
+            oneOf: [
+                { $ref: '#/$defs/formLoadTrigger' },
+                { $ref: '#/$defs/variableChangeTrigger' },
+            ],
+        },
+        formLoadTrigger: {
+            type: 'object',
+            required: ['kind', 'sourceLine'],
+            properties: {
+                kind: { const: 'FORM_LOAD' },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        variableChangeTrigger: {
+            type: 'object',
+            required: ['kind', 'variableKey', 'sourceLine'],
+            properties: {
+                kind: { const: 'VARIABLE_CHANGE' },
+                variableKey: { $ref: '#/$defs/designKey' },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        outcome: {
+            type: 'object',
+            required: ['outcomeId', 'sourceLine', 'effects'],
+            properties: {
+                outcomeId: { $ref: '#/$defs/designKey' },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+                condition: { $ref: '#/$defs/condition' },
+                effects: {
+                    type: 'array',
+                    minItems: 1,
+                    items: { $ref: '#/$defs/effect' },
+                },
+            },
+            additionalProperties: false,
+        },
+        condition: {
+            oneOf: [
+                { $ref: '#/$defs/allCondition' },
+                { $ref: '#/$defs/anyCondition' },
+                { $ref: '#/$defs/comparisonCondition' },
+                { $ref: '#/$defs/emptinessCondition' },
+                { $ref: '#/$defs/membershipCondition' },
+                { $ref: '#/$defs/rangeCondition' },
+                { $ref: '#/$defs/transitionCondition' },
+                { $ref: '#/$defs/rowCountCondition' },
+            ],
+        },
+        allCondition: {
+            type: 'object',
+            required: ['kind', 'operator', 'sourceLine', 'operands'],
+            properties: {
+                kind: { const: 'all' },
+                operator: { const: 'AND' },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+                operands: {
+                    type: 'array',
+                    minItems: 2,
+                    items: { $ref: '#/$defs/condition' },
+                },
+            },
+            additionalProperties: false,
+        },
+        anyCondition: {
+            type: 'object',
+            required: ['kind', 'operator', 'sourceLine', 'operands'],
+            properties: {
+                kind: { const: 'any' },
+                operator: { const: 'OR' },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+                operands: {
+                    type: 'array',
+                    minItems: 2,
+                    items: { $ref: '#/$defs/condition' },
+                },
+            },
+            additionalProperties: false,
+        },
+        comparisonCondition: {
+            type: 'object',
+            required: ['kind', 'operator', 'variableKey', 'value', 'sourceLine'],
+            properties: {
+                kind: { const: 'comparison' },
+                operator: {
+                    enum: [
+                        'EQUALS',
+                        'NOT_EQUALS',
+                        'GREATER_THAN',
+                        'GREATER_THAN_OR_EQUALS',
+                        'LESS_THAN',
+                        'LESS_THAN_OR_EQUALS',
+                        'CONTAINS',
+                        'NOT_CONTAINS',
+                        'STARTS_WITH',
+                        'ENDS_WITH',
+                    ],
+                },
+                variableKey: { $ref: '#/$defs/designKey' },
+                value: { $ref: '#/$defs/scalarValue' },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        emptinessCondition: {
+            type: 'object',
+            required: ['kind', 'operator', 'variableKey', 'sourceLine'],
+            properties: {
+                kind: { const: 'emptiness' },
+                operator: { enum: ['IS_EMPTY', 'IS_NOT_EMPTY'] },
+                variableKey: { $ref: '#/$defs/designKey' },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        membershipCondition: {
+            type: 'object',
+            required: ['kind', 'operator', 'variableKey', 'values', 'sourceLine'],
+            properties: {
+                kind: { const: 'membership' },
+                operator: { enum: ['IN', 'NOT_IN'] },
+                variableKey: { $ref: '#/$defs/designKey' },
+                values: {
+                    type: 'array',
+                    minItems: 1,
+                    items: { $ref: '#/$defs/scalarValue' },
+                },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        rangeCondition: {
+            type: 'object',
+            required: ['kind', 'operator', 'variableKey', 'lower', 'upper', 'sourceLine'],
+            properties: {
+                kind: { const: 'range' },
+                operator: { const: 'BETWEEN' },
+                variableKey: { $ref: '#/$defs/designKey' },
+                lower: { $ref: '#/$defs/scalarValue' },
+                upper: { $ref: '#/$defs/scalarValue' },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        transitionCondition: {
+            type: 'object',
+            required: ['kind', 'operator', 'variableKey', 'from', 'to', 'sourceLine'],
+            properties: {
+                kind: { const: 'transition' },
+                operator: { const: 'TRANSITIONS_FROM_TO' },
+                variableKey: { $ref: '#/$defs/designKey' },
+                from: { $ref: '#/$defs/scalarValue' },
+                to: { $ref: '#/$defs/scalarValue' },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        rowCountCondition: {
+            type: 'object',
+            required: ['kind', 'operator', 'mrvsKey', 'value', 'sourceLine'],
+            properties: {
+                kind: { const: 'row_count' },
+                operator: {
+                    enum: [
+                        'EQUALS',
+                        'NOT_EQUALS',
+                        'GREATER_THAN',
+                        'GREATER_THAN_OR_EQUALS',
+                        'LESS_THAN',
+                        'LESS_THAN_OR_EQUALS',
+                    ],
+                },
+                mrvsKey: { $ref: '#/$defs/designKey' },
+                value: { type: 'integer', minimum: 0 },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        effect: {
+            oneOf: [
+                { $ref: '#/$defs/valueEffect' },
+                { $ref: '#/$defs/visibleEffect' },
+                { $ref: '#/$defs/mandatoryEffect' },
+                { $ref: '#/$defs/readOnlyEffect' },
+                { $ref: '#/$defs/messageEffect' },
+            ],
+        },
+        valueEffect: {
+            type: 'object',
+            required: ['property', 'value', 'sourceLine'],
+            properties: {
+                property: { const: 'VALUE' },
+                value: { $ref: '#/$defs/typedValueExpression' },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        visibleEffect: {
+            type: 'object',
+            required: ['property', 'value', 'sourceLine'],
+            properties: {
+                property: { const: 'VISIBLE' },
+                value: { oneOf: [{ type: 'boolean' }, { enum: ['BASELINE', 'KEEP'] }] },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        mandatoryEffect: {
+            type: 'object',
+            required: ['property', 'value', 'sourceLine'],
+            properties: {
+                property: { const: 'MANDATORY' },
+                value: { oneOf: [{ type: 'boolean' }, { enum: ['BASELINE', 'KEEP'] }] },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        readOnlyEffect: {
+            type: 'object',
+            required: ['property', 'value', 'sourceLine'],
+            properties: {
+                property: { const: 'READ_ONLY' },
+                value: { oneOf: [{ type: 'boolean' }, { enum: ['BASELINE', 'KEEP'] }] },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+        messageEffect: {
+            type: 'object',
+            required: ['property', 'value', 'messageScope', 'messageType', 'sourceLine'],
+            properties: {
+                property: { const: 'MESSAGE' },
+                value: { type: 'string' },
+                messageScope: { enum: ['FIELD', 'FORM'] },
+                messageType: { enum: ['INFO', 'WARNING', 'ERROR'] },
+                sourceLine: { $ref: '#/$defs/positiveLine' },
+            },
+            additionalProperties: false,
+        },
+    },
 })
 
 function comparison(variableKey, operator, value, sourceLine) {
     return { kind: 'comparison', variableKey: variableKey, operator: operator, value: value, sourceLine: sourceLine }
+}
+
+function literal(semanticType, value) {
+    return { kind: 'literal', semanticType: semanticType, value: value }
 }
 
 function effect(property, value, sourceLine, messageScope, messageType) {
@@ -52,7 +643,7 @@ function effect(property, value, sourceLine, messageScope, messageType) {
 }
 
 function contract(behaviorId, target, trigger, outcomes) {
-    return { schemaVersion: 'ticket-01-v1', behaviorId: behaviorId, target: target, trigger: trigger, outcomes: outcomes }
+    return { schemaVersion: 'ticket-01-v2', behaviorId: behaviorId, target: target, trigger: trigger, outcomes: outcomes }
 }
 
 function accepted(id, businessLogicBlock, expectedContract) {
@@ -203,7 +794,7 @@ var fixtures = [
             '8: END',
         ].join('\n'),
         contract('initial_details', 'details', { kind: 'FORM_LOAD', sourceLine: 4 }, [
-            { outcomeId: 'initialized', sourceLine: 6, effects: [effect('VALUE', '  Xin chào — Καλημέρα — مرحبًا  ', 7)] },
+            { outcomeId: 'initialized', sourceLine: 6, effects: [effect('VALUE', literal('text', '  Xin chào — Καλημέρα — مرحبًا  '), 7)] },
         ])
     ),
     rejected(
@@ -243,7 +834,7 @@ return {
         extractorSkill: 'T01 Throwaway Contract Extractor',
         verifierSkill: 'T01 Throwaway Independent Verifier',
         promptVersions: { extractor: 'ticket-01-extractor-v1', verifier: 'ticket-01-verifier-v1' },
-        outputSchemaVersion: 'ticket-01-v1',
+        outputSchemaVersion: 'ticket-01-v2',
         capabilityCatalog: CAPABILITY_CATALOG,
         outputSchema: OUTPUT_SCHEMA,
     },
