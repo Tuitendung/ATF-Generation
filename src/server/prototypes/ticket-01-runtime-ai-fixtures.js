@@ -25,6 +25,37 @@ var CAPABILITY_CATALOG = JSON.stringify({
     messageScopes: ['FIELD', 'FORM'],
     messageTypes: ['INFO', 'WARNING', 'ERROR'],
     booleanOperators: ['AND', 'OR'],
+    rejectionDecisionPolicy: {
+        codeSemantics: {
+            BOOLEAN_PARENTHESES_REQUIRED: {
+                appliesWhen: 'One condition expression mixes AND and OR without explicit source parentheses.',
+                doesNotApplyWhen: 'The condition uses only one boolean operator or explicit source parentheses make the grouping unambiguous.',
+                citePhysicalLines: 'Only the physical condition line or lines containing the ambiguous mixed boolean expression.',
+                excludeValidStructuralAnchors: ['BEHAVIOR_ID', 'TARGET', 'TRIGGER', 'LOGIC', 'OUTCOME_ID', 'END'],
+            },
+            TECHNICAL_IDENTIFIER_REQUIRED: {
+                appliesWhen: 'The Design uses a display label instead of a declared technical entry_key, or uses a fixed-choice display label instead of its internal value.',
+                doesNotApplyWhen: 'The Design uses declared technical entry_key values and fixed-choice internal values.',
+                citePhysicalLines: 'Only the physical line containing the label-based reference.',
+                excludeValidStructuralAnchors: ['BEHAVIOR_ID', 'TARGET', 'TRIGGER', 'LOGIC', 'OUTCOME_ID', 'END'],
+            },
+            EFFECT_PROPERTY_UNSUPPORTED: {
+                appliesWhen: 'The effect request is understandable, but the requested property, presentation behavior, or effect capability is absent from the supported effects catalog.',
+                doesNotApplyWhen: 'The effect statement cannot be parsed into a supported effect shape or is structurally invalid.',
+                citePhysicalLines: 'Only the physical effect line or lines containing the understandable but unsupported request.',
+                excludeValidStructuralAnchors: ['BEHAVIOR_ID', 'TARGET', 'TRIGGER', 'LOGIC', 'OUTCOME_ID', 'END'],
+            },
+            EFFECT_INVALID: {
+                appliesWhen: 'The effect statement cannot be parsed into a supported effect shape or is structurally invalid.',
+                doesNotApplyWhen: 'The effect request is understandable and only its requested property, presentation behavior, or effect capability is absent from the supported effects catalog.',
+                citePhysicalLines: 'Only the physical effect line or lines containing the unparseable or structurally invalid statement.',
+                excludeValidStructuralAnchors: ['BEHAVIOR_ID', 'TARGET', 'TRIGGER', 'LOGIC', 'OUTCOME_ID', 'END'],
+            },
+        },
+        sourceLineAttribution: 'Include only physical source lines directly containing the invalid, ambiguous, label-based, changed, or unsupported construct.',
+        validStructuralAnchors: ['BEHAVIOR_ID', 'TARGET', 'TRIGGER', 'LOGIC', 'OUTCOME_ID', 'END'],
+        structuralAnchorExclusion: 'Exclude valid structural anchor lines unless that anchor itself is the rejection cause.',
+    },
     rules: [
         'Use technical entry_key and fixed-choice internal values only.',
         'Mixed AND and OR requires explicit source parentheses.',
@@ -833,7 +864,7 @@ return {
     contracts: {
         extractorSkill: 'T01 Throwaway Contract Extractor',
         verifierSkill: 'T01 Throwaway Independent Verifier',
-        promptVersions: { extractor: 'ticket-01-extractor-v1', verifier: 'ticket-01-verifier-v1' },
+        promptVersions: { extractor: 'ticket-01-extractor-v3', verifier: 'ticket-01-verifier-v2' },
         outputSchemaVersion: 'ticket-01-v2',
         capabilityCatalog: CAPABILITY_CATALOG,
         outputSchema: OUTPUT_SCHEMA,

@@ -145,3 +145,55 @@ Ticket 01 output schema: COMPILED; all reviewed responses valid
 ```
 
 The final gate classification remains **BLOCKED**, not PASS or FAIL, solely because the required real ServiceNow/Now Assist target evidence is still unavailable.
+
+### 2026-08-06 — Generated prompt and first target-call findings
+
+The first real target call supplied useful capability-level evidence but did not pass the gate. Sanitized observations only:
+
+- scoped `sn_one_extend.OneExtendUtil.execute` visibility, capability dispatch, actual model inference, and pre/post input integrity passed;
+- the Skill Config candidate was rejected as mismatched and nullified, so Skill Config-bound invocation and runtime role enforcement remain unproven;
+- the model response wrapper contained a Markdown-fenced `model_output`, which is a technical `response_schema` failure and requires exactly one fresh identical retry through the harness after remediation;
+- target logging exposed raw Design, schema, assembled prompt, response, and internal identifiers. No raw attachment or raw content was copied into the repository.
+
+TDD then reproduced a deployment defect at the SDK-generated XML seam: both prompt records contained the unresolved literal `outputRules`. The regression was observed red, the exact reviewed six-line output rules were inlined in both throwaway prompts, and both prompts were moved to new draft version 2 records rather than modifying target-published version 1. SDK 4.8.1 verification:
+
+```text
+npm.cmd run build
+[now-sdk] Build completed successfully
+
+npm.cmd run test:ticket-01-generated-prompts
+ticket-01 generated Now Assist prompt tests passed
+
+npm.cmd run test:ticket-01-v2-feasibility
+Ticket 01 local feasibility harness: PASS (11 fixtures x 10 runs; deterministic controls only)
+```
+
+The Australia documentation identifies `com.sn.generative.ai.log_prompt` as the boolean switch controlling Generative AI API-call logging (default `true`) and `sys_generative_ai_log` as the 180-day prompt/response/edited-response debug log. The effective target property value must be read and raw logging disabled for the canary window before any further model call. The corrected version 2 prompts still require redeployment and Skill Builder publication. The correct target-supported/generated Skill Config binding is still required; no resource-mapping ID will be guessed.
+
+Gate result remains **BLOCKED**. No corrected target canary, identical retry, repeated corpus, privacy proof, or zero-artifact proof has been claimed.
+
+### 2026-08-07 — Extractor v2 focused prompt-level smoke FAIL; v3 remediated locally
+
+The operator deployed and published `Ticket 01 Independent Extraction` version 2 on the Australia target. A capability-level scoped Background Script invocation reached the model and returned successfully, resolving the earlier active-prompt/error-code failure. The marker probe preserved its canonical input hash before and after invocation and reported successful capability status with provider and response present. The target still rejected and nullified the supplied `skillConfigId`, so Skill Config-bound invocation and runtime role enforcement remain unproven; no alternate resource/config/definition ID is inferred.
+
+The unchanged reviewed `unsupported_behavior` Skill Builder Test Prompt fixture then produced a raw-JSON-only response with no Markdown/commentary that passed the focused closed response schema but was semantically wrong. That focused schema constrained `status` with `const: rejected`, so the result did not prove that the model independently selected between accepted and rejected:
+
+- expected: `EFFECT_PROPERTY_UNSUPPORTED`, source lines `[7]`;
+- observed sanitized fields: `EFFECT_INVALID`, source lines `[1, 7]`.
+
+This is semantic disagreement, not `response_schema`. The prompt-level observation had no retry, second model invocation, third pass, majority vote, or contract selection. Extractor v2 focused prompt-level fixture verdict is **FAIL**. The reviewed expected result was not weakened. This Test Prompt result does not prove Skill Config binding, runtime ACL/`atf_test_admin` enforcement, scoped Background Script execution for this response, immutable/fresh-copy attempt handling, identical retry behavior, or zero runtime artifacts.
+
+The exact sanitized response is retained as a characterization only at the public response-validation and canonical-difference seams. **Characterization regression: GREEN on first execution because those existing seams already rejected the observed response as different from the reviewed contract.** No harness behavior was intentionally broken to manufacture RED, and the two-Skill runtime orchestration remains unchanged. Separate existing `runFixture` coverage proves local semantic non-retry, no vote/selection, terminal inconsistency, and zero artifact delta; none of those local-double facts is presented as target Test Prompt evidence.
+
+The actual RED→GREEN cycles were at missing V3 seams: the distinct Extractor v3 generated record/rules and the incomplete rejection policy/parity coverage. The machine-reviewable throwaway Capability Catalog now defines apply/non-apply conditions, physical source-line citation, and valid-anchor exclusions for every rejection code used by the reviewed invalid corpus: `BOOLEAN_PARENTHESES_REQUIRED`, `TECHNICAL_IDENTIFIER_REQUIRED`, `EFFECT_PROPERTY_UNSUPPORTED`, and `EFFECT_INVALID`. Independent fixture literals preserve every reviewed code/source mapping, including `unsupported_behavior` as `EFFECT_PROPERTY_UNSUPPORTED` at `[7]` and `ambiguous_prose` as `EFFECT_INVALID` at `[7]`. The normalized contract remains `ticket-01-v2`.
+
+SDK 4.8.1 generated metadata proves:
+
+- Extractor v2 prompt bytes remain unchanged and are represented as the already-published lower version;
+- Extractor v3 has a distinct identity, explicit `version=3`, equivalent decision rules for all four reviewed rejection codes plus the exact required effect/source-line rules and original six output rules, and remains draft/inactive;
+- Verifier v2 remains independent and draft/inactive;
+- actual generated model/temperature are `llm_generic_small_v2` / `0.2`.
+
+Extended target logs retained raw synthetic input, assembled prompt, and response even with `com.sn.generative.ai.log_prompt=false`. The operator waived this only for synthetic, non-sensitive functional POC testing. Privacy remains **FAIL/WAIVED** for production. Verifier target verification is deliberately skipped/not verified. Extractor v3 remains only locally remediated until deployment/publication, the focused prompt-level semantic smoke, and a separate scoped Background Script capability-level strict canary with the complete `ticket-01-v2` schema.
+
+Current classification: V3 local remediation **PASS**; V3 target prompt-level semantic smoke **NOT VERIFIED**; V3 capability-level strict canary **NOT VERIFIED**; overall Ticket 01 aggregate gate **NOT PASS**. Privacy is waived rather than passed, Skill Config binding and role enforcement are unproven, Verifier is skipped, and no v3 target result is claimed.

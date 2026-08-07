@@ -136,6 +136,15 @@ declare global {
                     ticket_01_extractor_prompt_v1: {
                         table: 'sys_generative_ai_config'
                         id: '48128a9a794e4be4b414da310423b6da'
+                        deleted: true
+                    }
+                    ticket_01_extractor_prompt_v2: {
+                        table: 'sys_generative_ai_config'
+                        id: 'cfb77aa564d94886991bedc80087d40d'
+                    }
+                    ticket_01_extractor_prompt_v3: {
+                        table: 'sys_generative_ai_config'
+                        id: '1bacd630db5c441c9984cc1311b6609a'
                     }
                     ticket_01_extractor_user_access: {
                         table: 'sys_security_acl'
@@ -216,6 +225,11 @@ declare global {
                     ticket_01_verifier_prompt_v1: {
                         table: 'sys_generative_ai_config'
                         id: '4afca767c617449d8f59e0b05b950afa'
+                        deleted: true
+                    }
+                    ticket_01_verifier_prompt_v2: {
+                        table: 'sys_generative_ai_config'
+                        id: '93af4c8a2bc84670b0f711c957038d8b'
                     }
                     ticket_01_verifier_user_access: {
                         table: 'sys_security_acl'
@@ -730,6 +744,13 @@ declare global {
                         key: {
                             document_key: 'dac4f7b74b3a446ab24467dbf9210412'
                             variable: 'b3be97b99f1303002528d4b4232e70ce'
+                        }
+                    },
+                    {
+                        table: 'sys_generative_ai_prompt_config'
+                        id: '4cae193158e046c19209905ed0da56eb'
+                        key: {
+                            ai_config: '93af4c8a2bc84670b0f711c957038d8b'
                         }
                     },
                     {
@@ -1289,11 +1310,25 @@ declare global {
                         }
                     },
                     {
+                        table: 'sys_generative_ai_prompt_config'
+                        id: '8edd3408b1cb4fc58c40c829585e4db2'
+                        key: {
+                            ai_config: '1bacd630db5c441c9984cc1311b6609a'
+                        }
+                    },
+                    {
                         table: 'sys_variable_value'
                         id: '8f7e93e93982454087b4f1ac93e5bfae'
                         key: {
                             document_key: 'dac4f7b74b3a446ab24467dbf9210412'
                             variable: '516e57b99f1303002528d4b4232e700b'
+                        }
+                    },
+                    {
+                        table: 'sys_generative_ai_prompt_config'
+                        id: '913f61a0c1ad413a9479dad2ed954460'
+                        key: {
+                            ai_config: 'cfb77aa564d94886991bedc80087d40d'
                         }
                     },
                     {
@@ -1637,6 +1672,7 @@ declare global {
                     {
                         table: 'sys_generative_ai_prompt_config'
                         id: 'bc44a8bdd7094b969bb755cec87f97a3'
+                        deleted: true
                         key: {
                             ai_config: '48128a9a794e4be4b414da310423b6da'
                         }
@@ -1867,6 +1903,7 @@ declare global {
                     {
                         table: 'sys_generative_ai_prompt_config'
                         id: 'db3264e3fefa471fba6eec3662356887'
+                        deleted: true
                         key: {
                             ai_config: '4afca767c617449d8f59e0b05b950afa'
                         }

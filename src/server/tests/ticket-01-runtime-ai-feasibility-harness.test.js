@@ -217,6 +217,81 @@ function testOutputSchemaCompletelyDefinesTheNormalizedContract() {
     requireClosedObjects(schema, 'schema')
 }
 
+function testRejectionDecisionPolicyStaysInCatalogSchemaAndReviewedFixtureParity() {
+    var capabilityCatalog = JSON.parse(corpus.contracts.capabilityCatalog)
+    var schema = JSON.parse(corpus.contracts.outputSchema)
+    var policy = capabilityCatalog.rejectionDecisionPolicy
+    var reviewedInvalidExpectations = [
+        { id: 'ambiguous_boolean_grouping', code: 'BOOLEAN_PARENTHESES_REQUIRED', sourceLines: [6] },
+        { id: 'display_label_variable_violation', code: 'TECHNICAL_IDENTIFIER_REQUIRED', sourceLines: [4] },
+        { id: 'choice_label_violation', code: 'TECHNICAL_IDENTIFIER_REQUIRED', sourceLines: [6] },
+        { id: 'unsupported_behavior', code: 'EFFECT_PROPERTY_UNSUPPORTED', sourceLines: [7] },
+        { id: 'ambiguous_prose', code: 'EFFECT_INVALID', sourceLines: [7] },
+    ]
+    var reviewedInvalidFixtures = corpus.fixtures.filter(function (fixture) { return fixture.expectedStatus === 'rejected' })
+
+    assert.ok(policy, 'Capability Catalog must supply a machine-reviewable rejection decision policy')
+    assert.deepStrictEqual(policy.codeSemantics, {
+        BOOLEAN_PARENTHESES_REQUIRED: {
+            appliesWhen: 'One condition expression mixes AND and OR without explicit source parentheses.',
+            doesNotApplyWhen: 'The condition uses only one boolean operator or explicit source parentheses make the grouping unambiguous.',
+            citePhysicalLines: 'Only the physical condition line or lines containing the ambiguous mixed boolean expression.',
+            excludeValidStructuralAnchors: ['BEHAVIOR_ID', 'TARGET', 'TRIGGER', 'LOGIC', 'OUTCOME_ID', 'END'],
+        },
+        TECHNICAL_IDENTIFIER_REQUIRED: {
+            appliesWhen: 'The Design uses a display label instead of a declared technical entry_key, or uses a fixed-choice display label instead of its internal value.',
+            doesNotApplyWhen: 'The Design uses declared technical entry_key values and fixed-choice internal values.',
+            citePhysicalLines: 'Only the physical line containing the label-based reference.',
+            excludeValidStructuralAnchors: ['BEHAVIOR_ID', 'TARGET', 'TRIGGER', 'LOGIC', 'OUTCOME_ID', 'END'],
+        },
+        EFFECT_PROPERTY_UNSUPPORTED: {
+            appliesWhen: 'The effect request is understandable, but the requested property, presentation behavior, or effect capability is absent from the supported effects catalog.',
+            doesNotApplyWhen: 'The effect statement cannot be parsed into a supported effect shape or is structurally invalid.',
+            citePhysicalLines: 'Only the physical effect line or lines containing the understandable but unsupported request.',
+            excludeValidStructuralAnchors: ['BEHAVIOR_ID', 'TARGET', 'TRIGGER', 'LOGIC', 'OUTCOME_ID', 'END'],
+        },
+        EFFECT_INVALID: {
+            appliesWhen: 'The effect statement cannot be parsed into a supported effect shape or is structurally invalid.',
+            doesNotApplyWhen: 'The effect request is understandable and only its requested property, presentation behavior, or effect capability is absent from the supported effects catalog.',
+            citePhysicalLines: 'Only the physical effect line or lines containing the unparseable or structurally invalid statement.',
+            excludeValidStructuralAnchors: ['BEHAVIOR_ID', 'TARGET', 'TRIGGER', 'LOGIC', 'OUTCOME_ID', 'END'],
+        },
+    })
+    assert.strictEqual(
+        policy.sourceLineAttribution,
+        'Include only physical source lines directly containing the invalid, ambiguous, label-based, changed, or unsupported construct.'
+    )
+    assert.deepStrictEqual(policy.validStructuralAnchors, ['BEHAVIOR_ID', 'TARGET', 'TRIGGER', 'LOGIC', 'OUTCOME_ID', 'END'])
+    assert.strictEqual(
+        policy.structuralAnchorExclusion,
+        'Exclude valid structural anchor lines unless that anchor itself is the rejection cause.'
+    )
+
+    Object.keys(policy.codeSemantics).forEach(function (code) {
+        assert.ok(schema.$defs.rejectionCode.enum.indexOf(code) >= 0, 'decision-policy code must be a stable Output Schema rejection code: ' + code)
+    })
+    assert.strictEqual(
+        Object.keys(policy.codeSemantics).filter(function (code) {
+            return schema.$defs.rejectionCode.enum.indexOf(code) < 0
+        }).length,
+        0,
+        'no rejection decision-policy key may use an unknown rejection code'
+    )
+    assert.deepStrictEqual(
+        reviewedInvalidFixtures.map(function (fixture) { return fixture.id }).sort(),
+        reviewedInvalidExpectations.map(function (expectation) { return expectation.id }).sort(),
+        'independent reviewed expectations must cover every invalid fixture'
+    )
+    reviewedInvalidExpectations.forEach(function (expectation) {
+        var fixture = fixtureById(expectation.id)
+        assert.strictEqual(fixture.expectedRejectionCode, expectation.code, expectation.id + ' must retain its independently reviewed code')
+        assert.deepStrictEqual(fixture.sourceLocations, expectation.sourceLines, expectation.id + ' must retain its independently reviewed physical source lines')
+        assert.ok(schema.$defs.rejectionCode.enum.indexOf(expectation.code) >= 0, expectation.code + ' must exist in the Output Schema enum')
+        assert.ok(policy.codeSemantics[expectation.code], expectation.code + ' must exist in the decision policy')
+    })
+    assert.strictEqual(fixtureById('unsupported_behavior').sourceLocations.indexOf(1), -1, 'the valid BEHAVIOR_ID anchor line must not be part of the reviewed rejection mapping')
+}
+
 function testTypedValueExpressionSchemaAndValidatorStayInParity() {
     var schema = JSON.parse(corpus.contracts.outputSchema)
     var capabilityCatalog = JSON.parse(corpus.contracts.capabilityCatalog)
@@ -815,6 +890,30 @@ function testSemanticDifferenceNeverRetriesOrSelects() {
     assert.strictEqual(evidence.zeroArtifacts, true)
 }
 
+function testObservedUnsupportedBehaviorIsAGreenSemanticCharacterization() {
+    var fixture = fixtureById('unsupported_behavior')
+    var observedResponse = {
+        status: 'rejected',
+        rejection: {
+            code: 'EFFECT_INVALID',
+            sourceLines: [1, 7],
+        },
+    }
+    var schemaValidated = harness.validateSkillResponse(clone(observedResponse))
+    var expectedResponse = reviewedResponse(fixture)
+    var differences = []
+
+    assert.deepStrictEqual(schemaValidated, observedResponse, 'the sanitized target response must pass the focused closed response schema')
+    assert.notStrictEqual(
+        harness.canonicalString(schemaValidated),
+        harness.canonicalString(expectedResponse),
+        'the schema-valid response must fail exact reviewed-contract comparison'
+    )
+    harness.differencePaths(schemaValidated, expectedResponse, '', differences, sha256)
+    assert.ok(differences.some(function (difference) { return difference.path === 'rejection.code' }))
+    assert.ok(differences.some(function (difference) { return difference.path === 'rejection.sourceLines.length' }))
+}
+
 function testEvidenceIsNonRawAndArtifactFree() {
     var fixture = fixtureById('field_message_exact_unicode_and_prompt_like_text')
     var artifactCount = 41
@@ -858,6 +957,8 @@ testInputMutationTerminallyBlocksBeforeVerifier()
 testEveryTechnicalFailureGetsOneIdenticalRetry()
 testEverySchemaInvalidVariantGetsOneTechnicalRetry()
 testSemanticDifferenceNeverRetriesOrSelects()
+testObservedUnsupportedBehaviorIsAGreenSemanticCharacterization()
+testRejectionDecisionPolicyStaysInCatalogSchemaAndReviewedFixtureParity()
 testEvidenceIsNonRawAndArtifactFree()
 testExactlyTwoIndependentSkillDefinitions()
 console.log('Ticket 01 local feasibility harness: PASS (' + corpus.fixtures.length + ' fixtures x 10 runs; deterministic controls only)')

@@ -11,7 +11,8 @@
         "deploy": "now-sdk install",
         "transform": "now-sdk transform",
         "types": "now-sdk dependencies",
-        "test:ticket-01-v2-feasibility": "node src/server/tests/ticket-01-runtime-ai-feasibility-harness.test.js"
+        "test:ticket-01-v2-feasibility": "node src/server/tests/ticket-01-runtime-ai-feasibility-harness.test.js",
+        "test:ticket-01-generated-prompts": "node src/server/tests/ticket-01-generated-now-assist-prompts.test.js"
     },
     "devDependencies": {
         "@servicenow/sdk": "4.8.1",
